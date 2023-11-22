@@ -67,7 +67,7 @@ class PomodoroApp(tk.Tk):
         
     def set_static_layer(self):
         # Open the static layer image
-        static_layer = Image.open("static_layer.png")
+        static_layer = Image.open("/Images/LofiGirl_NoBackground.png")
         tk_static_layer = ImageTk.PhotoImage(static_layer)
         
         if hasattr(self, 'static_layer_label'):
