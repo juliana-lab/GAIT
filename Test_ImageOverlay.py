@@ -5,21 +5,29 @@ def overlay_images(background_path, overlay_path, output_path):
     background = Image.open(background_path)
     overlay = Image.open(overlay_path)
 
-    # Resize overlay image to match the background's size if necessary
-    # Uncomment the next line if you want to resize
-    # overlay = overlay.resize(background.size, Image.ANTIALIAS)
+    # Resize the background image to fit within specified coordinates
+    target_size = (561 - 138, 275 - 0)  # Width and height
+    resized_background = background.resize(target_size, Image.Resampling.LANCZOS)
+
+    # Create a new blank (white) image (canvas) matching the size of the overlay image
+    canvas = Image.new('RGB', overlay.size, (255, 255, 255))
+
+    # Position for the resized background image within specified coordinates
+    position = (138, 0)  # Top-left corner
+
+    # Paste the resized background onto the canvas
+    canvas.paste(resized_background, position)
 
     # Overlay the images
-    background.paste(overlay, (0, 0), overlay)
-    # The (0, 0) is the top left corner where the overlay starts
+    canvas.paste(overlay, (0, 0), overlay)
 
     # Save the result
-    background.save(output_path, format="PNG")
+    canvas.save(output_path, format="PNG")
 
 # Paths to your images
-background_image_path = 'path/to/your/background.jpg'
-overlay_image_path = 'path/to/your/overlay.png'
-output_image_path = 'path/to/your/output.png'
+background_image_path = 'Images/Test_Image.png'
+overlay_image_path = 'Images/LofiGirl_NoBackground.png'
+output_image_path = 'output.png'
 
 # Function call
 overlay_images(background_image_path, overlay_image_path, output_image_path)
