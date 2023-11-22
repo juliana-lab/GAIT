@@ -64,6 +64,26 @@ class PomodoroApp(tk.Tk):
         self.question_entry.lift()
         self.ask_button.lift()
         self.chat_output.lift()
+        
+    def set_static_layer(self):
+        # Open the static layer image
+        static_layer = Image.open("static_layer.png")
+        tk_static_layer = ImageTk.PhotoImage(static_layer)
+        
+        if hasattr(self, 'static_layer_label'):
+            self.static_layer_label.destroy()
+        
+        self.static_layer_label = tk.Label(self, image=tk_static_layer)
+        self.static_layer_label.image = tk_static_layer
+        self.static_layer_label.place(x=0, y=0, relwidth=1, relheight=1)
+        
+        # Raise other elements above the static layer
+        self.label_timer.lift()
+        self.start_button.lift()
+        self.question_entry.lift()
+        self.ask_button.lift()
+        self.chat_output.lift()
+    
 
     def start_timer(self, minutes):
         for i in range(minutes * 60, 0, -1):
@@ -99,6 +119,7 @@ class PomodoroApp(tk.Tk):
             return
 
         self.set_background_image(inspiration)
+        self.set_static_layer()  # Add the static layer
         self.run_pomodoro(sessions)
 
     def ask_chatgpt(self):
