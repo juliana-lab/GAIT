@@ -23,12 +23,37 @@ def generate_image(image_prompt):
     else:
         r.raise_for_status()
 
+
+def overlay_images(background_stream, overlay_path):
+    # Open the background and overlay images
+    background = Image.open(background_stream)
+    overlay = Image.open(overlay_path)
+
+    # Resize the background image to fit within specified coordinates
+    target_size = (561 - 138, 275 - 0)  # Width and height
+    resized_background = background.resize(target_size, Image.Resampling.LANCZOS)
+
+    # Create a new blank (white) image (canvas) matching the size of the overlay image
+    canvas = Image.new('RGB', overlay.size, (255, 255, 255))
+
+    # Position for the resized background image within specified coordinates
+    position = (138, 0)  # Top-left corner
+
+    # Paste the resized background onto the canvas
+    canvas.paste(resized_background, position)
+
+    # Overlay the images
+    canvas.paste(overlay, (0, 0), overlay)
+
+    return ImageTk.PhotoImage(canvas)
+
+
 class PomodoroApp(tk.Tk):
     def __init__(self):
         super().__init__()
 
         self.title("Pomodoro Timer")
-        self.geometry("400x400")
+        self.geometry("1000x650")
 
         self.label_timer = tk.Label(self, text="25:00", font=("Arial", 30))
         self.label_timer.pack(pady=50)
@@ -48,15 +73,19 @@ class PomodoroApp(tk.Tk):
         image_bytes = generate_image(image_prompt)
 
         byte_stream = BytesIO(image_bytes)
-        image = Image.open(byte_stream)
-        tk_image = ImageTk.PhotoImage(image)
+        overlay_image_path = 'Images/LofiGirl_NoBackground.png'
+
+        # Use the overlay_images function
+        tk_combined_image = overlay_images(byte_stream, overlay_image_path)
+
 
         if hasattr(self, 'background_label'):
             self.background_label.destroy()
 
-        self.background_label = tk.Label(self, image=tk_image)
-        self.background_label.image = tk_image
+        self.background_label = tk.Label(self, image=tk_combined_image)
+        self.background_label.image = tk_combined_image
         self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+
         
         # Raise other elements to the top
         self.label_timer.lift()
@@ -67,15 +96,15 @@ class PomodoroApp(tk.Tk):
         
     def set_static_layer(self):
         # Open the static layer image
-        static_layer = Image.open("/Images/LofiGirl_NoBackground.png")
-        tk_static_layer = ImageTk.PhotoImage(static_layer)
+        #static_layer = Image.open("Images/LofiGirl_NoBackground.png")
+        #tk_static_layer = ImageTk.PhotoImage(static_layer)
         
         if hasattr(self, 'static_layer_label'):
             self.static_layer_label.destroy()
         
-        self.static_layer_label = tk.Label(self, image=tk_static_layer)
-        self.static_layer_label.image = tk_static_layer
-        self.static_layer_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #self.static_layer_label = tk.Label(self, image=tk_static_layer)
+        #self.static_layer_label.image = tk_static_layer
+        #self.static_layer_label.place(x=0, y=0, relwidth=1, relheight=1)
         
         # Raise other elements above the static layer
         self.label_timer.lift()
@@ -87,6 +116,8 @@ class PomodoroApp(tk.Tk):
 
     def start_timer(self, minutes):
         for i in range(minutes * 60, 0, -1):
+            if not self.label_timer.winfo_exists():
+                break
             mins, secs = divmod(i, 60)
             timer = '{:02d}:{:02d}'.format(mins, secs)
             self.label_timer.config(text=timer)
