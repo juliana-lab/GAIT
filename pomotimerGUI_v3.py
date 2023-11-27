@@ -5,12 +5,23 @@ import requests
 from io import BytesIO
 import openai
 import time
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 
 from config import OPENAI_API_KEY, CLIPDROP_API_KEY
 
 # Initialize OpenAI API
 openai.api_key = OPENAI_API_KEY
 
+SPOTIFY_CLIENT_ID = '0456943ace9d4666b09ae7cc8a6d253f'
+SPOTIFY_CLIENT_SECRET = '659148aa437a4217af46f8b3d8744841'
+SPOTIFY_REDIRECT_URI = 'http://localhost:8888/callback'
+SPOTIFY_SCOPE = 'user-modify-playback-state user-read-playback-state'
+
+spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
+                                                    client_secret=SPOTIFY_CLIENT_SECRET,
+                                                    redirect_uri=SPOTIFY_REDIRECT_URI,
+                                                    scope=SPOTIFY_SCOPE))
 
 def generate_image(image_prompt):
     r = requests.post('https://clipdrop-api.co/text-to-image/v1',
@@ -93,7 +104,11 @@ class PomodoroApp(tk.Tk):
         self.question_entry.lift()
         self.ask_button.lift()
         self.chat_output.lift()
-        
+
+    def play_music(self, track_uri):
+        spotify.start_playback(uris=[track_uri])
+    def pause_music(self):
+        spotify.pause_playback()
     def set_static_layer(self):
         # Open the static layer image
         #static_layer = Image.open("Images/LofiGirl_NoBackground.png")
@@ -128,6 +143,12 @@ class PomodoroApp(tk.Tk):
         for session in range(1, num_sessions + 1):
             messagebox.showinfo("Pomodoro Timer", f"Session {session} of {num_sessions}. Start studying!")
             self.start_timer(study_time)
+
+            #self.play_music('spotify:track:your_track_uri')
+            self.play_music('spotify:track:15DeqWWQB4dcEWzJg15VrN?si=84e6f713c2264109')
+
+            messagebox.showinfo("Pomodoro Timer", f"Session {session} of {num_sessions}. Start studying!")
+            #self.pause_music()
             
             if session == num_sessions:
                 messagebox.showinfo("Pomodoro Timer", "Well done! You've completed all your study sessions!")
