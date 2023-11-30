@@ -140,12 +140,23 @@ class PomodoroApp(tk.Tk):
             time.sleep(1)
 
     def run_pomodoro(self, num_sessions, study_time=25, short_break=5, long_break=15, sessions_before_long_break=4):
+        devices = spotify.devices()
+        print(devices)
         for session in range(1, num_sessions + 1):
             messagebox.showinfo("Pomodoro Timer", f"Session {session} of {num_sessions}. Start studying!")
             self.start_timer(study_time)
 
+            #self.play_music('https://open.spotify.com/track/32mVHdy0bi1XKgr0ajsBlG?si=e596a482f035471b')
+            try:
+                print("Attempting to start playback.")
+                spotify.start_playback(device_id='54446ff093a7ae0baade421dcf1bd5105f5276b6',
+                                       uris=['spotify:track:4iV5W9uYEdYUVa79Axb7Rh'])  # Replace with a valid track URI
+                print("Playback started.")
+            except Exception as e:
+                print(f"Error in playback: {e}")
+
+
             #self.play_music('spotify:track:your_track_uri')
-            self.play_music('spotify:track:15DeqWWQB4dcEWzJg15VrN?si=84e6f713c2264109')
 
             messagebox.showinfo("Pomodoro Timer", f"Session {session} of {num_sessions}. Start studying!")
             #self.pause_music()
