@@ -13,8 +13,8 @@ from config import OPENAI_API_KEY, CLIPDROP_API_KEY
 # Initialize OpenAI API
 openai.api_key = OPENAI_API_KEY
 
-SPOTIFY_CLIENT_ID = '0456943ace9d4666b09ae7cc8a6d253f'
-SPOTIFY_CLIENT_SECRET = '659148aa437a4217af46f8b3d8744841'
+SPOTIFY_CLIENT_ID = 'cc92ceb5a2ac42aa9483f091704e15f1'
+SPOTIFY_CLIENT_SECRET = '5630be5c99974d52bf6952528a2490c8'
 SPOTIFY_REDIRECT_URI = 'http://localhost:8888/callback'
 SPOTIFY_SCOPE = 'user-modify-playback-state user-read-playback-state'
 
