@@ -181,6 +181,8 @@ class PomodoroApp(tk.Tk):
         if not inspiration:
             return
 
+
+
         self.set_background_image(inspiration)
         self.set_static_layer()  # Add the static layer
         self.run_pomodoro(sessions)

@@ -2,6 +2,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import simpledialog,messagebox
 from tkinter import font as tkfont
+import threading
 import pygame
 import time
 import requests
@@ -90,11 +91,12 @@ class WelcomePage(tk.Tk):
                                  height=2, width=10)  # Adjust height and width as needed
         start_button.place(relx=0.5, rely=0.7, anchor="center")
 
-        exit_button = tk.Button(self, text="Exit Full screen", command=self.exit_fullscreen,
+        exit_button = tk.Button(self, text="Exit full screen", command=self.exit_fullscreen,
                                  bg=self.dominant_color, fg="black",  # White text on colored background
                                  font=button_font,
                                  height=2, width=13)  # Adjust height and width as needed
-        exit_button.place(relx=0.98, rely=0.98, anchor="se")
+        #exit_button.place(relx=0.98, rely=0.98, anchor="se")
+        exit_button.place(relx=1.0, rely=1.0, anchor="se")
 
     def on_start_clicked(self):
         self.open_new_page()
@@ -152,12 +154,12 @@ class WelcomePage(tk.Tk):
         except Exception as e:
             print(f"Failed to load background image: {e}")
 
-        exit_button = tk.Button(new_window, text="Exit Full screen", command=self.exit_fullscreen,
+        exit_button = tk.Button(new_window, text="Exit full screen", command=self.exit_fullscreen,
                                 bg=self.dominant_color, fg="black",
                                 font=tkfont.Font(family="Helvetica", size=16, weight="bold"),
                                 height=2, width=13)
-        exit_button.grid(row=start_row + 8, column=3, padx=10, pady=10, sticky='se')  # Bottom right corner
-
+        #exit_button.grid(row=start_row + 8, column=3, padx=10, pady=10, sticky='se')  # Bottom right corner
+        exit_button.place(relx=1.0, rely=1.0, anchor="se")
         # Function to show pop-up dialog
 
     def show_combined_popup_dialog(self, event, music_file,image_path):
@@ -193,36 +195,109 @@ class WelcomePage(tk.Tk):
 
         # Create a button to submit the answers and start the timer
         submit_button = tk.Button(dialog, text="Submit",
-                                  command=lambda: self.start_pomodoro_from_popup(dialog, sections_entry,
-                                                                                 inspiration_entry, image_path))
+                                  command=lambda: self.start_pomodoro_from_popup(dialog,sections_entry,
+                                                                                 inspiration_entry, image_path,music_file))
         submit_button.pack()
 
-    def start_pomodoro_from_popup(self, dialog, sections_entry, inspiration_entry, image_path):
+    def start_pomodoro_from_popup(self, dialog,sections_entry, inspiration_entry, image_path,music_file):
         # Destroy the popup dialog
+        inspiration_text = inspiration_entry.get()
+        sections_text = sections_entry.get()
+
         dialog.destroy()
 
         # Open the new page with the selected background image
-        self.open_pomodoro_page(sections_entry,inspiration_entry,image_path)
+        self.open_pomodoro_page(sections_text,inspiration_text,image_path,music_file)
 
-    def open_pomodoro_page(self, sections_entry,inspiration_entry ,background_image_path):
+
+    def open_pomodoro_page(self,sections_text,inspiration_text ,background_image_path,music_file):
         if hasattr(self, 'previous_window'):
             self.previous_window.destroy()
+
         new_page = tk.Toplevel(self)
         new_page.configure(bg=self.dominant_color)
         new_page.attributes("-fullscreen", True)
-        print('HELOOOOOOO')
-        text = inspiration_entry.get()
-        print(text)
 
-        #self.set_background_image(inspiration_entry.string)
+        # Customize the loading label
+        loading_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
+        loading_label = tk.Label(new_page, text="Loading...", bg=self.dominant_color, fg="black", font=loading_font)
+        loading_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Timer label
+        timer_font = tkfont.Font(family="Helvetica", size=48, weight="bold")
+        timer_label = tk.Label(new_page, bg=self.dominant_color, fg="black", font=timer_font)
+        timer_label.place(relx=0.5, rely=0.2, anchor="center")
+
+        # Initialize timer
+        self.timer_seconds = 25 * 60  # 25 minutes
 
 
-        # Create the Exit Full Screen button
-        exit_button = tk.Button(new_page, text="Exit Full screen", command=self.exit_fullscreen,
+        # Function to update the timer
+        def update_timer():
+            if self.timer_seconds > 0:
+                minutes, seconds = divmod(self.timer_seconds, 60)
+                timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
+                self.timer_seconds -= 1
+                new_page.after(1000, update_timer)
+
+        # Function to update the GUI with the image
+        def update_image():
+            image_bytes = generate_image(inspiration_text)
+            byte_stream = BytesIO(image_bytes)
+
+            #image = Image.open(byte_stream)
+            tk_combined_image = overlay_images(byte_stream, background_image_path)
+
+            # Update the GUI
+            loading_label.configure(image=tk_combined_image, text="")
+            loading_label.image = tk_combined_image  # Keep a reference
+
+            # Session label
+            session_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
+            session_label = tk.Label(new_page, text="Session #1", bg=self.dominant_color, fg="black", font=session_font)
+            session_label.place(relx=0.1, rely=0.5, anchor="center")
+
+            update_timer()
+
+            self.create_chatgpt_interface(new_page)
+
+            self.play_music(music_file)
+
+        # Create a separate thread for image generation
+        thread = threading.Thread(target=update_image)
+        thread.start()
+
+        exit_button = tk.Button(new_page, text="Exit full screen", command=self.exit_fullscreen,
                                 bg=self.dominant_color, fg="black",
                                 font=tkfont.Font(family="Helvetica", size=16, weight="bold"),
                                 height=2, width=13)
         exit_button.place(relx=1.0, rely=1.0, anchor="se")
+
+    def create_chatgpt_interface(self, parent):
+        # Create a Text widget for displaying the conversation
+        chat_output = tk.Text(parent, height=10, width=80, bg=self.dominant_color,
+                              borderwidth=0, highlightthickness=0)
+        chat_output.pack(side=tk.BOTTOM, padx=5, pady=5)
+
+        # Create an Entry widget for the user's question
+        question_entry = tk.Entry(parent, width=50)
+        question_entry.pack(side=tk.BOTTOM, padx=5, pady=5)
+
+        # Create a Button to submit the question
+        ask_button = tk.Button(parent, text="Ask ChatGPT",
+                               command=lambda: self.ask_chatgpt(question_entry, chat_output))
+        ask_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+    def ask_chatgpt(self, question_entry, chat_output):
+        question = question_entry.get()
+        if question:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",  # Adjust model as needed
+                messages=[{"role": "user", "content": question}]
+            )
+            chat_output.insert(tk.END, f"You: {question}\nChatGPT: {response['choices'][0]['message']['content']}\n")
+            chat_output.see(tk.END)
+            question_entry.delete(0, tk.END)
+
     def exit_fullscreen(self):
         if self.attributes("-fullscreen"):
             self.attributes("-fullscreen", False)
