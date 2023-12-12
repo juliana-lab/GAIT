@@ -8,15 +8,12 @@ import time
 import requests
 from io import BytesIO
 from config import OPENAI_API_KEY, CLIPDROP_API_KEY
-import openai
+from openai import OpenAI
 
 
-openai.api_key = OPENAI_API_KEY
+#openai.api_key = OPENAI_API_KEY
+client = OpenAI(api_key=OPENAI_API_KEY) 
 
-SPOTIFY_CLIENT_ID = 'cc92ceb5a2ac42aa9483f091704e15f1'
-SPOTIFY_CLIENT_SECRET = '5630be5c99974d52bf6952528a2490c8'
-SPOTIFY_REDIRECT_URI = 'http://localhost:8888/callback'
-SPOTIFY_SCOPE = 'user-modify-playback-state user-read-playback-state'
 
 
 
@@ -287,16 +284,53 @@ class WelcomePage(tk.Tk):
         ask_button = tk.Button(parent, text="Ask ChatGPT",
                                command=lambda: self.ask_chatgpt(question_entry, chat_output))
         ask_button.pack(side=tk.BOTTOM, padx=5, pady=5)
+        
+    # def ask_chatgpt(self, question_entry, chat_output):
+    #     question = question_entry.get()
+    #     if question:
+    #         response = openai.ChatCompletion.create(
+    #             model="gpt-3.5-turbo",  # Adjust model as needed
+    #             messages=[{"role": "user", "content": question}]
+    #         )
+    #         chat_output.insert(tk.END, f"You: {question}\nChatGPT: {response['choices'][0]['message']['content']}\n")
+    #         chat_output.see(tk.END)
+    #         question_entry.delete(0, tk.END)
+            
     def ask_chatgpt(self, question_entry, chat_output):
-        question = question_entry.get()
-        if question:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",  # Adjust model as needed
-                messages=[{"role": "user", "content": question}]
+     question = question_entry.get()
+     if question:
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Act like an engineering tutor for a student with ADHD. Before answering, break your answers into bullet points and make the explanation engaging, so the student doesn't lose interest over the topic provided. Whenever possible provide examples of applications of the topic in engineering."
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    }
+                ],
+                temperature=1,
+                max_tokens=3000,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0
             )
-            chat_output.insert(tk.END, f"You: {question}\nChatGPT: {response['choices'][0]['message']['content']}\n")
+            # Access the response text correctly
+            if response.choices and len(response.choices) > 0 and response.choices[0].message:
+                response_text = response.choices[0].message.content  # Access the content attribute directly
+            else:
+                response_text = "No response"
+            chat_output.insert(tk.END, f"You: {question}\nChatGPT: {response_text}\n")
             chat_output.see(tk.END)
-            question_entry.delete(0, tk.END)
+            question_entry.delete(0, tk.END)  # Clear the input field after sending the question
+        except Exception as e:
+            # Handle any errors that occur during the API call
+            chat_output.insert(tk.END, f"Error: {e}\n")
+            chat_output.see(tk.END)
+ 
 
     def exit_fullscreen(self):
         if self.attributes("-fullscreen"):
