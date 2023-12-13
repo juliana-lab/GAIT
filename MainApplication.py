@@ -211,12 +211,16 @@ class WelcomePage(tk.Tk):
         if hasattr(self, 'previous_window'):
             self.previous_window.destroy()
 
-        self.session_number = 0
+        self.session_number = 1
         self.sessions_before_long_break = 4  # Adjust as needed
-        self.long_break = 15 * 60  # 15 minutes
-        self.short_break = 5 * 60  # 5 minutes
-        #self.pomodoro_duration = 25 * 60  # 25 minutes
-        self.pomodoro_duration = 10  # 25 minutes
+        #self.long_break = 15 * 60  # 15 minutes
+        #self.short_break = 5 * 60  # 5 minutes
+        # #self.pomodoro_duration = 25 * 60  # 25 minutes
+        self.long_break = 15   # 15 minutes
+        self.short_break = 5   # 5 minutes
+        self.pomodoro_duration = 25  # 25 minutes
+        self.current_timer = self.pomodoro_duration
+        self.break_time = False
 
         new_page = tk.Toplevel(self)
         new_page.configure(bg=self.dominant_color)
@@ -234,43 +238,66 @@ class WelcomePage(tk.Tk):
 
         # Parse the number of sections
         try:
-            num_sessions = int(sections_text)
+            self.num_sessions = int(sections_text) +1
         except ValueError:
             messagebox.showerror("Error", "Invalid number of sessions.")
             return
 
 
-        # Initialize timer
-        #self.timer_seconds = 25 * 60  # 25 minutes
-        #self.start_timer(new_page, timer_label, self.pomodoro_duration)
-
-
-        # Function to update the timer
-        def update_timer():
-            if self.pomodoro_duration > 0:
-                minutes, seconds = divmod(self.pomodoro_duration, 60)
+        #Function to update the timer
+        def timer_logic():
+            if self.current_timer >=0:
+                minutes, seconds = divmod(self.current_timer, 60)
                 timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
-                self.pomodoro_duration -= 1
-                new_page.after(1000, update_timer)
+                self.current_timer -= 1
+                time.sleep(1)
+                new_page.after(1000, timer_logic())
+                print(self.current_timer)
+            elif self.current_timer < 0:
+                update_timer()
             else:
-                self.session_number += 1
-                if self.session_number == num_sessions:
-                    #messagebox.showinfo("Pomodoro Timer", "Well done! You've completed all your study sessions!")
-                    return  # Ends the timer updates
+                return
+                #print("HEYYYYYYYYYYY")
+                #update_timer()
 
-                if self.session_number % self.sessions_before_long_break == 0:
-                    #messagebox.showinfo("Pomodoro Timer", f"Take a long break of {self.long_break // 60} minutes!")
-                    self.start_timer(new_page, timer_label, self.long_break)
-                else:
-                    #messagebox.showinfo("Pomodoro Timer", f"Take a short break of {self.short_break // 60} minutes!")
-                    self.start_timer(new_page, timer_label, self.short_break)
+        def update_timer():
+            if self.session_number == self.num_sessions:
+                messagebox.showinfo("Pomodoro Timer", "Well done! You've completed all your study sessions!")
+                return  # Ends the timer updates
 
-            # Session label
-            session_string = "Session #" + str(self.session_number)
-            session_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
-            session_label = tk.Label(new_page, text=session_string, bg=self.dominant_color, fg="black",
-                                     font=session_font)
-            session_label.place(relx=0.1, rely=0.5, anchor="center")
+            if self.session_number % self.sessions_before_long_break == 0 and self.break_time:
+                #messagebox.showinfo("Pomodoro Timer", f"Take a long break of {self.long_break // 60} minutes!")
+                session_string = "Long Break"
+                session_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
+                session_label = tk.Label(new_page, text=session_string, bg=self.dominant_color, fg="black",
+                                         font=session_font)
+                session_label.place(relx=0.1, rely=0.5, anchor="center")
+                self.current_timer = self.long_break
+                self.break_time = False
+                timer_logic()
+            if self.break_time:
+                #messagebox.showinfo("Pomodoro Timer", f"Take a short break of {self.short_break // 60} minutes!")
+                session_string = "Short Break"
+                session_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
+                session_label = tk.Label(new_page, text=session_string, bg=self.dominant_color, fg="black",
+                                          font=session_font)
+                session_label.place(relx=0.1, rely=0.5, anchor="center")
+                self.current_timer = self.short_break
+                self.break_time = False
+                timer_logic()
+            else:
+                self.current_timer = self.pomodoro_duration
+                print('Hellooooooooooooooo')
+                session_string = "Session #" + str(self.session_number)
+                print(session_string)
+                session_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
+                session_label = tk.Label(new_page, text=session_string, bg=self.dominant_color, fg="black",
+                                         font=session_font)
+                session_label.place(relx=0.1, rely=0.5, anchor="center")
+                self.break_time = True
+                self.session_number = self.session_number + 1
+                timer_logic()
+
 
 
 
@@ -286,12 +313,12 @@ class WelcomePage(tk.Tk):
             loading_label.configure(image=tk_combined_image, text="")
             loading_label.image = tk_combined_image  # Keep a reference
 
-
-            update_timer()
-
             self.create_chatgpt_interface(new_page)
 
             self.play_music(music_file)
+
+            update_timer()
+
 
         # Create a separate thread for image generation
         thread = threading.Thread(target=update_image)
@@ -302,6 +329,7 @@ class WelcomePage(tk.Tk):
                                 font=tkfont.Font(family="Helvetica", size=16, weight="bold"),
                                 height=2, width=13)
         exit_button.place(relx=1.0, rely=1.0, anchor="se")
+
 
     def create_chatgpt_interface(self, parent):
         # Create a Text widget for displaying the conversation
