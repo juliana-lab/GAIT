@@ -272,7 +272,7 @@ class WelcomePage(tk.Tk):
 
     def create_chatgpt_interface(self, parent):
         # Create a Text widget for displaying the conversation
-        chat_output = tk.Text(parent, height=10, width=80, bg=self.dominant_color,
+        chat_output = tk.Text(parent, height=10, width=120, bg=self.dominant_color,
                               borderwidth=0, highlightthickness=0)
         chat_output.pack(side=tk.BOTTOM, padx=5, pady=5)
 
@@ -295,17 +295,15 @@ class WelcomePage(tk.Tk):
     #         chat_output.insert(tk.END, f"You: {question}\nChatGPT: {response['choices'][0]['message']['content']}\n")
     #         chat_output.see(tk.END)
     #         question_entry.delete(0, tk.END)
-            
-    def ask_chatgpt(self, question_entry, chat_output):
-     question = question_entry.get()
-     if question:
+
+    def handle_chatgpt_request(self, question, chat_output):
         try:
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {
                         "role": "system",
-                        "content": "Act like an engineering tutor for a student with ADHD. Before answering, break your answers into bullet points and make the explanation engaging, so the student doesn't lose interest over the topic provided. Whenever possible provide examples of applications of the topic in engineering."
+                        "content": "Act like an engineering tutor..."
                     },
                     {
                         "role": "user",
@@ -318,19 +316,22 @@ class WelcomePage(tk.Tk):
                 frequency_penalty=0,
                 presence_penalty=0
             )
-            # Access the response text correctly
             if response.choices and len(response.choices) > 0 and response.choices[0].message:
-                response_text = response.choices[0].message.content  # Access the content attribute directly
+                response_text = response.choices[0].message.content
             else:
                 response_text = "No response"
             chat_output.insert(tk.END, f"You: {question}\nChatGPT: {response_text}\n")
-            chat_output.see(tk.END)
-            question_entry.delete(0, tk.END)  # Clear the input field after sending the question
         except Exception as e:
-            # Handle any errors that occur during the API call
             chat_output.insert(tk.END, f"Error: {e}\n")
+        finally:
             chat_output.see(tk.END)
- 
+
+    def ask_chatgpt(self, question_entry, chat_output):
+        question = question_entry.get()
+        if question:
+            # Start a new thread for handling the ChatGPT request
+            threading.Thread(target=self.handle_chatgpt_request, args=(question, chat_output)).start()
+            question_entry.delete(0, tk.END)  # Clear the input field
 
     def exit_fullscreen(self):
         if self.attributes("-fullscreen"):
