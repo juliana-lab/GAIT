@@ -211,6 +211,13 @@ class WelcomePage(tk.Tk):
         if hasattr(self, 'previous_window'):
             self.previous_window.destroy()
 
+        self.session_number = 0
+        self.sessions_before_long_break = 4  # Adjust as needed
+        self.long_break = 15 * 60  # 15 minutes
+        self.short_break = 5 * 60  # 5 minutes
+        #self.pomodoro_duration = 25 * 60  # 25 minutes
+        self.pomodoro_duration = 10  # 25 minutes
+
         new_page = tk.Toplevel(self)
         new_page.configure(bg=self.dominant_color)
         new_page.attributes("-fullscreen", True)
@@ -225,17 +232,47 @@ class WelcomePage(tk.Tk):
         timer_label = tk.Label(new_page, bg=self.dominant_color, fg="black", font=timer_font)
         timer_label.place(relx=0.5, rely=0.2, anchor="center")
 
+        # Parse the number of sections
+        try:
+            num_sessions = int(sections_text)
+        except ValueError:
+            messagebox.showerror("Error", "Invalid number of sessions.")
+            return
+
+
         # Initialize timer
-        self.timer_seconds = 25 * 60  # 25 minutes
+        #self.timer_seconds = 25 * 60  # 25 minutes
+        #self.start_timer(new_page, timer_label, self.pomodoro_duration)
 
 
         # Function to update the timer
         def update_timer():
-            if self.timer_seconds > 0:
-                minutes, seconds = divmod(self.timer_seconds, 60)
+            if self.pomodoro_duration > 0:
+                minutes, seconds = divmod(self.pomodoro_duration, 60)
                 timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
-                self.timer_seconds -= 1
+                self.pomodoro_duration -= 1
                 new_page.after(1000, update_timer)
+            else:
+                self.session_number += 1
+                if self.session_number == num_sessions:
+                    #messagebox.showinfo("Pomodoro Timer", "Well done! You've completed all your study sessions!")
+                    return  # Ends the timer updates
+
+                if self.session_number % self.sessions_before_long_break == 0:
+                    #messagebox.showinfo("Pomodoro Timer", f"Take a long break of {self.long_break // 60} minutes!")
+                    self.start_timer(new_page, timer_label, self.long_break)
+                else:
+                    #messagebox.showinfo("Pomodoro Timer", f"Take a short break of {self.short_break // 60} minutes!")
+                    self.start_timer(new_page, timer_label, self.short_break)
+
+            # Session label
+            session_string = "Session #" + str(self.session_number)
+            session_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
+            session_label = tk.Label(new_page, text=session_string, bg=self.dominant_color, fg="black",
+                                     font=session_font)
+            session_label.place(relx=0.1, rely=0.5, anchor="center")
+
+
 
         # Function to update the GUI with the image
         def update_image():
@@ -249,10 +286,6 @@ class WelcomePage(tk.Tk):
             loading_label.configure(image=tk_combined_image, text="")
             loading_label.image = tk_combined_image  # Keep a reference
 
-            # Session label
-            session_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
-            session_label = tk.Label(new_page, text="Session #1", bg=self.dominant_color, fg="black", font=session_font)
-            session_label.place(relx=0.1, rely=0.5, anchor="center")
 
             update_timer()
 
@@ -285,16 +318,6 @@ class WelcomePage(tk.Tk):
                                command=lambda: self.ask_chatgpt(question_entry, chat_output))
         ask_button.pack(side=tk.BOTTOM, padx=5, pady=5)
         
-    # def ask_chatgpt(self, question_entry, chat_output):
-    #     question = question_entry.get()
-    #     if question:
-    #         response = openai.ChatCompletion.create(
-    #             model="gpt-3.5-turbo",  # Adjust model as needed
-    #             messages=[{"role": "user", "content": question}]
-    #         )
-    #         chat_output.insert(tk.END, f"You: {question}\nChatGPT: {response['choices'][0]['message']['content']}\n")
-    #         chat_output.see(tk.END)
-    #         question_entry.delete(0, tk.END)
 
     def handle_chatgpt_request(self, question, chat_output):
         try:
